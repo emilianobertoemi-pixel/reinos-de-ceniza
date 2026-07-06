@@ -202,6 +202,11 @@ const escoltaInicial = {
   espadachines: 0,
   arqueros: 0,
   jinetes: 0,
+  }
+  const ataqueInicial = {
+  espadachines: 0,
+  arqueros: 0,
+  jinetes: 0,
 }
 
 function App() {
@@ -216,6 +221,8 @@ function App() {
   const [camposCeniza, setCamposCeniza] = useState([])
   const [campoSeleccionado, setCampoSeleccionado] = useState(null)
   const [escoltaSeleccionada, setEscoltaSeleccionada] = useState(escoltaInicial)
+  const [aldeaSeleccionada, setAldeaSeleccionada] = useState(null)
+const [tropasAtaque, setTropasAtaque] = useState(ataqueInicial)
 
   function puedePagar(costo) {
     return Object.entries(costo).every(([recurso, cantidad]) => {
@@ -266,7 +273,63 @@ function App() {
       reino.heroes.reina.nivel * 20
     )
   }
+function prepararAtaque(aldea) {
+  setAldeaSeleccionada(aldea)
+  setTropasAtaque(ataqueInicial)
+  setResultadoBatalla(null)
+  setMensaje(`Preparando ataque contra ${aldea.nombre}.`)
+}
 
+function cambiarTropasAtaque(tipo, valor) {
+  const numero = Math.max(0, Math.floor(Number(valor) || 0))
+  const maximo = reino.ejercito[tipo]
+
+  setTropasAtaque((ataqueActual) => ({
+    ...ataqueActual,
+    [tipo]: Math.min(numero, maximo),
+  }))
+}
+
+function calcularPoderAtaqueSeleccionado() {
+  const poderEspadachin = reino.mejoras.espadachines === 2 ? 14 : 10
+  const poderArquero = reino.mejoras.arqueros === 2 ? 11 : 8
+
+  return (
+    tropasAtaque.espadachines * poderEspadachin +
+    tropasAtaque.arqueros * poderArquero +
+    tropasAtaque.jinetes * 22 +
+    reino.heroes.rey.nivel * 35 +
+    reino.heroes.reina.nivel * 20
+  )
+}
+
+function calcularCargaAtaqueSeleccionado() {
+  return (
+    tropasAtaque.espadachines * 10 +
+    tropasAtaque.arqueros * 8 +
+    tropasAtaque.jinetes * 25
+  )
+}
+
+function calcularDefensaAldeaDespuesAtaque() {
+  const espadachinesEnAldea =
+    reino.ejercito.espadachines - tropasAtaque.espadachines
+
+  const arquerosEnAldea =
+    reino.ejercito.arqueros - tropasAtaque.arqueros
+
+  const jinetesEnAldea =
+    reino.ejercito.jinetes - tropasAtaque.jinetes
+
+  return (
+    espadachinesEnAldea * 8 +
+    arquerosEnAldea * 11 +
+    jinetesEnAldea * 18 +
+    reino.mejoras.muralla * 120 +
+    reino.heroes.rey.nivel * 30 +
+    reino.heroes.reina.nivel * 20
+  )
+}
   function atacarAldea(aldea) {
     const poderBase = calcularPoderAtaque()
     const factorAzar = 0.85 + Math.random() * 0.3
@@ -737,26 +800,102 @@ function calcularRiesgoFinalConEscolta() {
       )}
 
       {mostrarAtaques && (
-        <section className="panel training-panel">
-          <h2>Aldeas enemigas detectadas</h2>
-          <p>Poder de ataque actual: {calcularPoderAtaque()}</p>
+  <section className="panel training-panel">
+    <h2>Aldeas enemigas detectadas</h2>
+    <p>Poder de ataque actual: {calcularPoderAtaque()}</p>
 
-          <div className="enemy-grid">
-            {aldeasEnemigas.map((aldea) => (
-              <div className="enemy-card" key={aldea.id}>
-                <h3>{aldea.nombre}</h3>
-                <p>Dificultad: {aldea.dificultad}</p>
-                <p>Defensa base: {aldea.defensa}</p>
-                <p>Muralla nivel {aldea.muralla}</p>
-                <p>Torres: {aldea.torres}</p>
-                <p>Riesgo del Campo de Ceniza: {aldea.riesgo}%</p>
+    <div className="enemy-grid">
+      {aldeasEnemigas.map((aldea) => (
+        <div className="enemy-card" key={aldea.id}>
+          <h3>{aldea.nombre}</h3>
+          <p>Dificultad: {aldea.dificultad}</p>
+          <p>Defensa base: {aldea.defensa}</p>
+          <p>Muralla nivel {aldea.muralla}</p>
+          <p>Torres: {aldea.torres}</p>
+          <p>Riesgo del Campo de Ceniza: {aldea.riesgo}%</p>
 
-                <button onClick={() => atacarAldea(aldea)}>Atacar</button>
-              </div>
-            ))}
+          <div className="field-actions">
+            <button onClick={() => prepararAtaque(aldea)}>
+              Preparar ataque
+            </button>
+
+            <button onClick={() => atacarAldea(aldea)}>
+              Atacar con todo
+            </button>
           </div>
-        </section>
-      )}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+      
+      {aldeaSeleccionada && (
+  <section className="escort-panel">
+    <h2>Preparar ataque</h2>
+    <h3>{aldeaSeleccionada.nombre}</h3>
+
+    <p>Dificultad: {aldeaSeleccionada.dificultad}</p>
+    <p>Defensa estimada enemiga: {aldeaSeleccionada.defensa}</p>
+    <p>Muralla nivel {aldeaSeleccionada.muralla}</p>
+    <p>Torres: {aldeaSeleccionada.torres}</p>
+
+    <h4>Elegir tropas para atacar</h4>
+
+    <div className="escort-grid">
+      <label>
+        Espadachines
+        <input
+          type="number"
+          min="0"
+          max={reino.ejercito.espadachines}
+          value={tropasAtaque.espadachines}
+          onChange={(event) =>
+            cambiarTropasAtaque('espadachines', event.target.value)
+          }
+        />
+        <small>Disponibles: {reino.ejercito.espadachines}</small>
+      </label>
+
+      <label>
+        Arqueros
+        <input
+          type="number"
+          min="0"
+          max={reino.ejercito.arqueros}
+          value={tropasAtaque.arqueros}
+          onChange={(event) =>
+            cambiarTropasAtaque('arqueros', event.target.value)
+          }
+        />
+        <small>Disponibles: {reino.ejercito.arqueros}</small>
+      </label>
+
+      <label>
+        Jinetes
+        <input
+          type="number"
+          min="0"
+          max={reino.ejercito.jinetes}
+          value={tropasAtaque.jinetes}
+          onChange={(event) =>
+            cambiarTropasAtaque('jinetes', event.target.value)
+          }
+        />
+        <small>Disponibles: {reino.ejercito.jinetes}</small>
+      </label>
+    </div>
+
+    <div className="preview-box">
+      <p>Poder de ataque enviado: {calcularPoderAtaqueSeleccionado()}</p>
+      <p>Capacidad de carga: {calcularCargaAtaqueSeleccionado()}</p>
+      <p>Defensa que queda en la aldea: {calcularDefensaAldeaDespuesAtaque()}</p>
+    </div>
+
+    <button disabled>
+      Enviar ataque seleccionado — próximo paso
+    </button>
+  </section>
+)}
 
       {campoSeleccionado && (
   <section className="escort-panel">
@@ -886,19 +1025,7 @@ function calcularRiesgoFinalConEscolta() {
   Preparar recolección
 </button>
 
-                <div className="field-actions">
-                  <button onClick={() => recolectarCampo(campo, 'rapida')}>
-                    Rápida
-                  </button>
-
-                  <button onClick={() => recolectarCampo(campo, 'profunda')}>
-                    Profunda
-                  </button>
-
-                  <button onClick={() => recolectarCampo(campo, 'escolta')}>
-                    Con escolta
-                  </button>
-                </div>
+                
               </div>
             ))}
           </div>
