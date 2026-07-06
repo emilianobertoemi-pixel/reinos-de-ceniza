@@ -408,89 +408,146 @@ function calcularDefensaAldeaConEscolta() {
   )
 }
 
-  function recolectarCampo(campo, tipo) {
-    const configuracion = tiposRecoleccion[tipo]
-    const riesgoFinal = Math.round(campo.riesgo * configuracion.riesgoModificador)
-    const fueInterceptado = Math.random() * 100 < riesgoFinal
+function calcularRiesgoFinalConEscolta() {
+  if (!campoSeleccionado) return 0
 
-    let multiplicadorRecursos = configuracion.porcentajeRecursos
-    let chanceItems = configuracion.chanceItems
+  const riesgoBase = campoSeleccionado.riesgo
+  const poderEscolta = calcularPoderEscolta()
 
-    if (fueInterceptado) {
-      multiplicadorRecursos = multiplicadorRecursos * 0.25
-      chanceItems = chanceItems * 0.25
-    }
+  const reduccionPorEscolta = Math.min(40, Math.floor(poderEscolta / 25))
 
-    const recursosRecuperados = {
-      madera: Math.round(campo.recursos.madera * multiplicadorRecursos),
-      piedra: Math.round(campo.recursos.piedra * multiplicadorRecursos),
-      hierro: Math.round(campo.recursos.hierro * multiplicadorRecursos),
-      comida: Math.round(campo.recursos.comida * multiplicadorRecursos),
-      oro: Math.round(campo.recursos.oro * multiplicadorRecursos),
-    }
+  return Math.max(5, riesgoBase - reduccionPorEscolta)
+}
 
-    let itemsRecuperados = campo.restos.filter(() => Math.random() < chanceItems)
+  function recolectarCampo(campo, tipo, escolta = escoltaInicial) {
+  const configuracion = tiposRecoleccion[tipo]
 
-    if (!fueInterceptado && itemsRecuperados.length === 0 && Math.random() < 0.5) {
-      const itemAleatorio =
-        campo.restos[Math.floor(Math.random() * campo.restos.length)]
-      itemsRecuperados = [itemAleatorio]
-    }
+  const poderEscolta =
+    escolta.espadachines * 12 +
+    escolta.arqueros * 10 +
+    escolta.jinetes * 26
 
-    const perdidasEscolta = {
-      espadachines: 0,
-      arqueros: 0,
-      jinetes: 0,
-    }
+  const riesgoBase = Math.round(campo.riesgo * configuracion.riesgoModificador)
+  const reduccionPorEscolta = Math.min(40, Math.floor(poderEscolta / 25))
+  const riesgoFinal = Math.max(5, riesgoBase - reduccionPorEscolta)
 
-    if (tipo === 'escolta' && fueInterceptado) {
-      perdidasEscolta.espadachines = Math.min(reino.ejercito.espadachines, 1)
-      perdidasEscolta.arqueros = Math.min(reino.ejercito.arqueros, 1)
-      perdidasEscolta.jinetes = 0
-    }
+  const fueInterceptado = Math.random() * 100 < riesgoFinal
 
-    setReino((reinoActual) => {
-      const nuevoInventario = { ...reinoActual.inventario }
+  let multiplicadorRecursos = configuracion.porcentajeRecursos
+  let chanceItems = configuracion.chanceItems
+  let mensajeIntercepcion = 'La caravana llegó sin problemas.'
 
-      itemsRecuperados.forEach((item) => {
-        nuevoInventario[item] += 1
-      })
+  let porcentajePerdidasEscolta = 0
 
-      return {
-        ...reinoActual,
-        recursos: {
-          madera: reinoActual.recursos.madera + recursosRecuperados.madera,
-          piedra: reinoActual.recursos.piedra + recursosRecuperados.piedra,
-          hierro: reinoActual.recursos.hierro + recursosRecuperados.hierro,
-          comida: reinoActual.recursos.comida + recursosRecuperados.comida,
-          oro: reinoActual.recursos.oro + recursosRecuperados.oro,
-        },
-        ejercito: {
-          espadachines:
-            reinoActual.ejercito.espadachines - perdidasEscolta.espadachines,
-          arqueros: reinoActual.ejercito.arqueros - perdidasEscolta.arqueros,
-          jinetes: reinoActual.ejercito.jinetes - perdidasEscolta.jinetes,
-        },
-        inventario: nuevoInventario,
-      }
-    })
-
-    setCamposCeniza((camposActuales) =>
-      camposActuales.filter((campoActual) => campoActual.id !== campo.id)
+  if (fueInterceptado) {
+    const poderEmboscada = Math.round(
+      campo.riesgo * 5 + (tipo === 'profunda' ? 100 : 60)
     )
 
-    setResultadoRecoleccion({
-      tipo: configuracion.nombre,
-      origen: campo.origen,
-      fueInterceptado,
-      riesgoFinal,
-      recursosRecuperados,
-      itemsRecuperados,
-      perdidasEscolta,
+    if (poderEscolta === 0) {
+      multiplicadorRecursos *= 0.15
+      chanceItems *= 0.05
+      mensajeIntercepcion =
+        'La caravana no tenía escolta y fue saqueada casi por completo.'
+    } else if (poderEscolta >= poderEmboscada) {
+      multiplicadorRecursos *= 0.85
+      chanceItems *= 0.75
+      porcentajePerdidasEscolta = 0.1
+      mensajeIntercepcion =
+        'La escolta ganó la intercepción y protegió gran parte del botín.'
+    } else if (poderEscolta >= poderEmboscada * 0.65) {
+      multiplicadorRecursos *= 0.45
+      chanceItems *= 0.35
+      porcentajePerdidasEscolta = 0.22
+      mensajeIntercepcion =
+        'La escolta resistió y la caravana escapó con parte del botín.'
+    } else {
+      multiplicadorRecursos *= 0.2
+      chanceItems *= 0.1
+      porcentajePerdidasEscolta = 0.4
+      mensajeIntercepcion =
+        'La escolta fue derrotada y la caravana perdió casi todo.'
+    }
+  }
+
+  const perdidasEscolta = {
+    espadachines: Math.min(
+      escolta.espadachines,
+      Math.ceil(escolta.espadachines * porcentajePerdidasEscolta)
+    ),
+    arqueros: Math.min(
+      escolta.arqueros,
+      Math.ceil(escolta.arqueros * porcentajePerdidasEscolta)
+    ),
+    jinetes: Math.min(
+      escolta.jinetes,
+      Math.ceil(escolta.jinetes * porcentajePerdidasEscolta)
+    ),
+  }
+
+  const recursosRecuperados = {
+    madera: Math.round(campo.recursos.madera * multiplicadorRecursos),
+    piedra: Math.round(campo.recursos.piedra * multiplicadorRecursos),
+    hierro: Math.round(campo.recursos.hierro * multiplicadorRecursos),
+    comida: Math.round(campo.recursos.comida * multiplicadorRecursos),
+    oro: Math.round(campo.recursos.oro * multiplicadorRecursos),
+  }
+
+  let itemsRecuperados = campo.restos.filter(() => Math.random() < chanceItems)
+
+  if (!fueInterceptado && itemsRecuperados.length === 0 && Math.random() < 0.5) {
+    const itemAleatorio =
+      campo.restos[Math.floor(Math.random() * campo.restos.length)]
+    itemsRecuperados = [itemAleatorio]
+  }
+
+  setReino((reinoActual) => {
+    const nuevoInventario = { ...reinoActual.inventario }
+
+    itemsRecuperados.forEach((item) => {
+      nuevoInventario[item] += 1
     })
 
-    setMensaje(`${configuracion.nombre} completada en ${campo.origen}.`)
-  }
+    return {
+      ...reinoActual,
+      recursos: {
+        madera: reinoActual.recursos.madera + recursosRecuperados.madera,
+        piedra: reinoActual.recursos.piedra + recursosRecuperados.piedra,
+        hierro: reinoActual.recursos.hierro + recursosRecuperados.hierro,
+        comida: reinoActual.recursos.comida + recursosRecuperados.comida,
+        oro: reinoActual.recursos.oro + recursosRecuperados.oro,
+      },
+      ejercito: {
+        espadachines:
+          reinoActual.ejercito.espadachines - perdidasEscolta.espadachines,
+        arqueros: reinoActual.ejercito.arqueros - perdidasEscolta.arqueros,
+        jinetes: reinoActual.ejercito.jinetes - perdidasEscolta.jinetes,
+      },
+      inventario: nuevoInventario,
+    }
+  })
+
+  setCamposCeniza((camposActuales) =>
+    camposActuales.filter((campoActual) => campoActual.id !== campo.id)
+  )
+
+  setResultadoRecoleccion({
+    tipo: configuracion.nombre,
+    origen: campo.origen,
+    fueInterceptado,
+    riesgoFinal,
+    recursosRecuperados,
+    itemsRecuperados,
+    perdidasEscolta,
+    escoltaEnviada: escolta,
+    poderEscolta,
+    mensajeIntercepcion,
+  })
+
+  setCampoSeleccionado(null)
+  setEscoltaSeleccionada(escoltaInicial)
+  setMensaje(`${configuracion.nombre} completada en ${campo.origen}.`)
+}
 
   function puedeMejorar(mejora) {
     const cumpleNivel =
@@ -775,7 +832,25 @@ function calcularDefensaAldeaConEscolta() {
 
 <div className="preview-box">
   <p>Poder de escolta: {calcularPoderEscolta()}</p>
+  <p>Riesgo final estimado: {calcularRiesgoFinalConEscolta()}%</p>
   <p>Defensa que queda en la aldea: {calcularDefensaAldeaConEscolta()}</p>
+</div>
+<div className="field-actions">
+  <button
+    onClick={() =>
+      recolectarCampo(campoSeleccionado, 'rapida', escoltaSeleccionada)
+    }
+  >
+    Enviar rápida
+  </button>
+
+  <button
+    onClick={() =>
+      recolectarCampo(campoSeleccionado, 'profunda', escoltaSeleccionada)
+    }
+  >
+    Enviar profunda
+  </button>
 </div>
   </section>
 )}
@@ -926,6 +1001,24 @@ function calcularDefensaAldeaConEscolta() {
           ) : (
             <p className="message">La caravana llegó segura al reino.</p>
           )}
+          {resultadoRecoleccion.mensajeIntercepcion && (
+  <>
+    <h3>Intercepción</h3>
+    <p>{resultadoRecoleccion.mensajeIntercepcion}</p>
+    <p>Poder de escolta: {resultadoRecoleccion.poderEscolta}</p>
+  </>
+)}
+
+{resultadoRecoleccion.escoltaEnviada && (
+  <>
+    <h3>Escolta enviada</h3>
+    <ul>
+      <li>Espadachines: {resultadoRecoleccion.escoltaEnviada.espadachines}</li>
+      <li>Arqueros: {resultadoRecoleccion.escoltaEnviada.arqueros}</li>
+      <li>Jinetes: {resultadoRecoleccion.escoltaEnviada.jinetes}</li>
+    </ul>
+  </>
+)}
 
           <h3>Recursos recuperados</h3>
           <ul>
