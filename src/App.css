@@ -1,0 +1,225 @@
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #17110d;
+  color: #f4eadc;
+}
+
+.game {
+  min-height: 100vh;
+  padding: 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.hero {
+  background: linear-gradient(135deg, #4a2414, #1e1510);
+  border: 1px solid #7d5032;
+  border-radius: 20px;
+  padding: 32px;
+  margin-bottom: 24px;
+}
+
+.eyebrow {
+  color: #d8a35d;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+h1 {
+  font-size: 48px;
+  margin: 0 0 12px;
+}
+
+h2,
+h3 {
+  margin-top: 0;
+}
+
+.panel,
+.card {
+  background: #241812;
+  border: 1px solid #5f3b28;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.panel {
+  margin-bottom: 24px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+ul {
+  padding-left: 20px;
+  line-height: 1.8;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+button {
+  background: #b86b2c;
+  color: #fff4e6;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #d68135;
+}
+
+@media (max-width: 800px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  h1 {
+    font-size: 36px;
+  }
+}
+.training-panel {
+  margin-top: 24px;
+}
+
+.train-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.message {
+  margin-top: 16px;
+  color: #d8a35d;
+  font-weight: bold;
+}
+.enemy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.enemy-card {
+  background: #1b120e;
+  border: 1px solid #6c432c;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.enemy-card p {
+  margin: 8px 0;
+}
+
+.result-panel {
+  margin-top: 24px;
+  border-color: #a86535;
+}
+
+@media (max-width: 900px) {
+  .enemy-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.field-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.field-actions button {
+  padding: 10px 12px;
+}
+
+.danger {
+  color: #ff8a65;
+  font-weight: bold;
+}
+button:disabled {
+  background: #5c4a3b;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.global-message {
+  background: #241812;
+  border: 1px solid #7d5032;
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+.escort-panel {
+  margin-top: 24px;
+  background: #1b120e;
+  border: 1px solid #8c5734;
+  border-radius: 16px;
+  padding: 20px;
+}
+.escort-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.escort-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #241812;
+  border: 1px solid #5f3b28;
+  border-radius: 12px;
+  padding: 14px;
+  font-weight: bold;
+}
+
+.escort-grid input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #7d5032;
+  background: #120c09;
+  color: #f4eadc;
+  font-size: 16px;
+}
+
+.escort-grid small {
+  color: #d8a35d;
+  font-weight: normal;
+}
+
+.preview-box {
+  background: #241812;
+  border: 1px solid #7d5032;
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 16px;
+}
+
+@media (max-width: 800px) {
+  .escort-grid {
+    grid-template-columns: 1fr;
+  }
+}
