@@ -426,6 +426,143 @@ function calcularDefensaAldeaDespuesAtaque() {
     setResultadoRecoleccion(null)
     setMensaje(`Atacaste ${aldea.nombre}. Resultado: ${tipoResultado}.`)
   }
+  function atacarAldeaSeleccionada() {
+  if (!aldeaSeleccionada) {
+    setMensaje('Primero elegí una aldea para atacar.')
+    return
+  }
+
+  const totalTropasEnviadas =
+    tropasAtaque.espadachines + tropasAtaque.arqueros + tropasAtaque.jinetes
+
+  if (totalTropasEnviadas === 0) {
+    setMensaje('Tenés que enviar al menos una tropa al ataque.')
+    return
+  }
+
+  const aldea = aldeaSeleccionada
+  const poderBase = calcularPoderAtaqueSeleccionado()
+  const capacidadCarga = calcularCargaAtaqueSeleccionado()
+
+  const factorAzar = 0.85 + Math.random() * 0.3
+  const poderFinal = Math.round(poderBase * factorAzar)
+
+  const defensaTotal =
+    aldea.defensa + aldea.muralla * 60 + aldea.torres * 80
+
+  let tipoResultado = 'Derrota'
+  let porcentajeBotin = 0.05
+  let porcentajePerdidas = 0.25
+  let destruccion = Math.round((poderFinal / defensaTotal) * 60)
+
+  if (poderFinal >= defensaTotal) {
+    tipoResultado = 'Victoria'
+    porcentajeBotin = 0.35
+    porcentajePerdidas = 0.1
+    destruccion = Math.min(100, Math.round((poderFinal / defensaTotal) * 75))
+  } else if (poderFinal >= defensaTotal * 0.65) {
+    tipoResultado = 'Victoria parcial'
+    porcentajeBotin = 0.2
+    porcentajePerdidas = 0.15
+    destruccion = Math.min(75, destruccion)
+  }
+
+  const perdidas = {
+    espadachines: Math.min(
+      tropasAtaque.espadachines,
+      Math.ceil(tropasAtaque.espadachines * porcentajePerdidas)
+    ),
+    arqueros: Math.min(
+      tropasAtaque.arqueros,
+      Math.ceil(tropasAtaque.arqueros * porcentajePerdidas)
+    ),
+    jinetes: Math.min(
+      tropasAtaque.jinetes,
+      Math.ceil(tropasAtaque.jinetes * porcentajePerdidas)
+    ),
+  }
+
+  const botinPotencial = {
+    madera: Math.round(aldea.botin.madera * porcentajeBotin),
+    piedra: Math.round(aldea.botin.piedra * porcentajeBotin),
+    hierro: Math.round(aldea.botin.hierro * porcentajeBotin),
+    comida: Math.round(aldea.botin.comida * porcentajeBotin),
+    oro: Math.round(aldea.botin.oro * porcentajeBotin),
+  }
+
+  const totalBotinPotencial =
+    botinPotencial.madera +
+    botinPotencial.piedra +
+    botinPotencial.hierro +
+    botinPotencial.comida +
+    botinPotencial.oro
+
+  const factorCarga =
+    totalBotinPotencial > 0
+      ? Math.min(1, capacidadCarga / totalBotinPotencial)
+      : 0
+
+  const botinGanado = {
+    madera: Math.round(botinPotencial.madera * factorCarga),
+    piedra: Math.round(botinPotencial.piedra * factorCarga),
+    hierro: Math.round(botinPotencial.hierro * factorCarga),
+    comida: Math.round(botinPotencial.comida * factorCarga),
+    oro: Math.round(botinPotencial.oro * factorCarga),
+  }
+
+  const nuevoCampo = {
+    id: Date.now(),
+    origen: aldea.nombre,
+    riesgo: aldea.riesgo,
+    duracion: '2 horas',
+    recursos: {
+      madera: Math.round(aldea.botin.madera * 0.45),
+      piedra: Math.round(aldea.botin.piedra * 0.45),
+      hierro: Math.round(aldea.botin.hierro * 0.45),
+      comida: Math.round(aldea.botin.comida * 0.25),
+      oro: Math.round(aldea.botin.oro * 0.3),
+    },
+    restos: aldea.restos,
+  }
+
+  setReino((reinoActual) => ({
+    ...reinoActual,
+    recursos: {
+      madera: reinoActual.recursos.madera + botinGanado.madera,
+      piedra: reinoActual.recursos.piedra + botinGanado.piedra,
+      hierro: reinoActual.recursos.hierro + botinGanado.hierro,
+      comida: reinoActual.recursos.comida + botinGanado.comida,
+      oro: reinoActual.recursos.oro + botinGanado.oro,
+    },
+    ejercito: {
+      espadachines: reinoActual.ejercito.espadachines - perdidas.espadachines,
+      arqueros: reinoActual.ejercito.arqueros - perdidas.arqueros,
+      jinetes: reinoActual.ejercito.jinetes - perdidas.jinetes,
+    },
+  }))
+
+  setCamposCeniza((camposActuales) => [nuevoCampo, ...camposActuales])
+
+  setResultadoBatalla({
+    aldea: aldea.nombre,
+    tipoResultado,
+    poderBase,
+    poderFinal,
+    defensaTotal,
+    destruccion,
+    botinGanado,
+    perdidas,
+    campo: nuevoCampo,
+    capacidadCarga,
+    tropasEnviadas: tropasAtaque,
+  })
+
+  setAldeaSeleccionada(null)
+  setTropasAtaque(ataqueInicial)
+  setResultadoRecoleccion(null)
+  setMensaje(`Atacaste ${aldea.nombre}. Resultado: ${tipoResultado}.`)
+}
+  
   function prepararRecoleccion(campo) {
   setCampoSeleccionado(campo)
   setEscoltaSeleccionada(escoltaInicial)
@@ -891,9 +1028,9 @@ function calcularRiesgoFinalConEscolta() {
       <p>Defensa que queda en la aldea: {calcularDefensaAldeaDespuesAtaque()}</p>
     </div>
 
-    <button disabled>
-      Enviar ataque seleccionado — próximo paso
-    </button>
+    <button onClick={atacarAldeaSeleccionada}>
+  Enviar ataque seleccionado
+</button>
   </section>
 )}
 
@@ -1085,6 +1222,20 @@ function calcularRiesgoFinalConEscolta() {
           <p>Poder final con azar: {resultadoBatalla.poderFinal}</p>
           <p>Defensa enemiga: {resultadoBatalla.defensaTotal}</p>
           <p>Destrucción causada: {resultadoBatalla.destruccion}%</p>
+          {resultadoBatalla.capacidadCarga && (
+  <p>Capacidad de carga usada: {resultadoBatalla.capacidadCarga}</p>
+)}
+
+{resultadoBatalla.tropasEnviadas && (
+  <>
+    <h3>Tropas enviadas</h3>
+    <ul>
+      <li>Espadachines: {resultadoBatalla.tropasEnviadas.espadachines}</li>
+      <li>Arqueros: {resultadoBatalla.tropasEnviadas.arqueros}</li>
+      <li>Jinetes: {resultadoBatalla.tropasEnviadas.jinetes}</li>
+    </ul>
+  </>
+)}
 
           <h3>Botín inicial</h3>
           <ul>
