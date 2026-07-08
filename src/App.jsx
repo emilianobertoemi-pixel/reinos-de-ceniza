@@ -223,6 +223,7 @@ function App() {
   const [escoltaSeleccionada, setEscoltaSeleccionada] = useState(escoltaInicial)
   const [aldeaSeleccionada, setAldeaSeleccionada] = useState(null)
 const [tropasAtaque, setTropasAtaque] = useState(ataqueInicial)
+const [reporteEspia, setReporteEspia] = useState(null)
 
   function puedePagar(costo) {
     return Object.entries(costo).every(([recurso, cantidad]) => {
@@ -273,6 +274,38 @@ const [tropasAtaque, setTropasAtaque] = useState(ataqueInicial)
       reino.heroes.reina.nivel * 20
     )
   }
+  function crearRangoEstimado(valor, margen = 0.18) {
+  const minimo = Math.max(0, Math.round(valor * (1 - margen)))
+  const maximo = Math.round(valor * (1 + margen))
+
+  return `${minimo} - ${maximo}`
+}
+
+function espiarAldea(aldea) {
+  const defensaTotal =
+    aldea.defensa + aldea.muralla * 60 + aldea.torres * 80
+
+  const precision = 70 + Math.floor(Math.random() * 21)
+
+  const reporte = {
+    aldea: aldea.nombre,
+    precision,
+    recursos: {
+      madera: crearRangoEstimado(aldea.botin.madera),
+      piedra: crearRangoEstimado(aldea.botin.piedra),
+      hierro: crearRangoEstimado(aldea.botin.hierro),
+      comida: crearRangoEstimado(aldea.botin.comida),
+      oro: crearRangoEstimado(aldea.botin.oro),
+    },
+    defensa: crearRangoEstimado(defensaTotal),
+    muralla: aldea.muralla,
+    torres: aldea.torres,
+    posiblesRestos: aldea.restos,
+  }
+
+  setReporteEspia(reporte)
+  setMensaje(`Tus espías volvieron con información de ${aldea.nombre}.`)
+}
 function prepararAtaque(aldea) {
   setAldeaSeleccionada(aldea)
   setTropasAtaque(ataqueInicial)
@@ -952,17 +985,53 @@ function calcularRiesgoFinalConEscolta() {
           <p>Riesgo del Campo de Ceniza: {aldea.riesgo}%</p>
 
           <div className="field-actions">
-            <button onClick={() => prepararAtaque(aldea)}>
-              Preparar ataque
-            </button>
+  <button onClick={() => espiarAldea(aldea)}>
+    Espiar
+  </button>
 
-            <button onClick={() => atacarAldea(aldea)}>
-              Atacar con todo
-            </button>
-          </div>
+  <button onClick={() => prepararAtaque(aldea)}>
+    Preparar ataque
+  </button>
+
+  <button onClick={() => atacarAldea(aldea)}>
+    Atacar con todo
+  </button>
+</div>
         </div>
       ))}
     </div>
+  </section>
+)}
+
+{reporteEspia && (
+  <section className="panel result-panel">
+    <h2>Reporte de espionaje</h2>
+    <h3>{reporteEspia.aldea}</h3>
+
+    <p>Precisión estimada del reporte: {reporteEspia.precision}%</p>
+
+    <h3>Recursos estimados</h3>
+    <ul>
+      <li>Madera: {reporteEspia.recursos.madera}</li>
+      <li>Piedra: {reporteEspia.recursos.piedra}</li>
+      <li>Hierro: {reporteEspia.recursos.hierro}</li>
+      <li>Comida: {reporteEspia.recursos.comida}</li>
+      <li>Oro: {reporteEspia.recursos.oro}</li>
+    </ul>
+
+    <h3>Defensas estimadas</h3>
+    <ul>
+      <li>Defensa total estimada: {reporteEspia.defensa}</li>
+      <li>Muralla: nivel {reporteEspia.muralla}</li>
+      <li>Torres: {reporteEspia.torres}</li>
+    </ul>
+
+    <h3>Posibles restos del Campo de Ceniza</h3>
+    <p>
+      {reporteEspia.posiblesRestos
+        .map((item) => nombresItems[item])
+        .join(', ')}
+    </p>
   </section>
 )}
       
