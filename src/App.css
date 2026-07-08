@@ -223,3 +223,81 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+.actions {
+  position: fixed;
+  left: 24px;
+  top: 120px;
+  width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #1b120e;
+  border: 1px solid #5f3b28;
+  border-radius: 16px;
+  padding: 16px;
+  z-index: 10;
+}
+
+.actions::before {
+  content: "Menú del reino";
+  color: #d8a35d;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.actions button {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+}
+
+.game {
+  margin-left: 260px;
+  margin-right: auto;
+}
+
+@media (max-width: 900px) {
+  .actions {
+    position: static;
+    width: auto;
+    margin-bottom: 24px;
+  }
+
+  .game {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .actions button {
+    text-align: center;
+  }
+}
+.actions {
+  left: 28px;
+  top: 140px;
+  width: 230px;
+  padding: 22px;
+  gap: 16px;
+  border-radius: 18px;
+}
+
+.actions::before {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.actions button {
+  font-size: 15px;
+  padding: 16px 18px;
+  border-radius: 13px;
+  min-height: 54px;
+  line-height: 1.2;
+}
+
+.game {
+  margin-left: 310px;
+  max-width: 1180px;
+}

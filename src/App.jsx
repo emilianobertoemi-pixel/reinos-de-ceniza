@@ -4,6 +4,15 @@ import './App.css'
 const reinoInicial = {
   nombre: 'Reino de Ceniza',
   ayuntamiento: 1,
+    edificios: {
+    ayuntamiento: 1,
+    cuartel: 1,
+    herreria: 1,
+    tallerIngenieria: 1,
+    muralla: 1,
+    torreDefensiva: 1,
+    almacen: 1,
+  },
   recursos: {
     madera: 1000,
     piedra: 800,
@@ -45,6 +54,7 @@ const reinoInicial = {
 }
 
 const nombresItems = {
+  
   espadaRota: 'Espada rota',
   maderaAstillada: 'Madera astillada',
   cueroDanado: 'Cuero dañado',
@@ -54,6 +64,57 @@ const nombresItems = {
   planoMuralla: 'Plano de muralla',
   engranajeReforzado: 'Engranaje reforzado',
   reliquiaMenor: 'Reliquia menor',
+}
+const nombresEdificios = {
+  ayuntamiento: 'Ayuntamiento',
+  cuartel: 'Cuartel',
+  herreria: 'Herrería',
+  tallerIngenieria: 'Taller de Ingeniería',
+  muralla: 'Muralla',
+  torreDefensiva: 'Torre defensiva',
+  almacen: 'Almacén',
+}
+const costosEdificios = {
+  ayuntamiento: {
+    madera: 400,
+    piedra: 300,
+    hierro: 120,
+    oro: 80,
+  },
+  cuartel: {
+    madera: 280,
+    piedra: 180,
+    hierro: 140,
+    oro: 60,
+  },
+  herreria: {
+    madera: 220,
+    piedra: 220,
+    hierro: 220,
+    oro: 90,
+  },
+  tallerIngenieria: {
+    madera: 260,
+    piedra: 260,
+    hierro: 180,
+    oro: 100,
+  },
+  muralla: {
+    piedra: 350,
+    hierro: 160,
+    oro: 60,
+  },
+  torreDefensiva: {
+    madera: 180,
+    piedra: 300,
+    hierro: 180,
+    oro: 80,
+  },
+  almacen: {
+    madera: 300,
+    piedra: 180,
+    oro: 50,
+  },
 }
 
 const costosTropas = {
@@ -210,28 +271,59 @@ const escoltaInicial = {
 }
 const CLAVE_GUARDADO = 'reinosDeCenizaPartida'
 
+function normalizarReino(reinoGuardado) {
+  return {
+    ...reinoInicial,
+    ...reinoGuardado,
+    recursos: {
+      ...reinoInicial.recursos,
+      ...(reinoGuardado?.recursos || {}),
+    },
+    ejercito: {
+      ...reinoInicial.ejercito,
+      ...(reinoGuardado?.ejercito || {}),
+    },
+    heroes: {
+      ...reinoInicial.heroes,
+      ...(reinoGuardado?.heroes || {}),
+    },
+    inventario: {
+      ...reinoInicial.inventario,
+      ...(reinoGuardado?.inventario || {}),
+    },
+    mejoras: {
+      ...reinoInicial.mejoras,
+      ...(reinoGuardado?.mejoras || {}),
+    },
+    edificios: {
+      ...reinoInicial.edificios,
+      ...(reinoGuardado?.edificios || {}),
+    },
+  }
+}
+
 function cargarPartidaGuardada() {
   const partidaGuardada = localStorage.getItem(CLAVE_GUARDADO)
 
   if (!partidaGuardada) {
     return {
-      reino: reinoInicial,
-      camposCeniza: [],
-    }
+  reino: normalizarReino(reinoInicial),
+  camposCeniza: [],
+}
   }
 
   try {
     const partida = JSON.parse(partidaGuardada)
 
     return {
-      reino: partida.reino || reinoInicial,
-      camposCeniza: partida.camposCeniza || [],
-    }
+  reino: normalizarReino(partida.reino),
+  camposCeniza: partida.camposCeniza || [],
+}
   } catch {
     return {
-      reino: reinoInicial,
-      camposCeniza: [],
-    }
+  reino: normalizarReino(reinoInicial),
+  camposCeniza: [],
+}
   }
 }
 
@@ -241,6 +333,7 @@ function App() {
   const [mostrarAtaques, setMostrarAtaques] = useState(false)
   const [mostrarCampos, setMostrarCampos] = useState(false)
   const [mostrarMejoras, setMostrarMejoras] = useState(false)
+  const [mostrarConstruccion, setMostrarConstruccion] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [resultadoBatalla, setResultadoBatalla] = useState(null)
   const [resultadoRecoleccion, setResultadoRecoleccion] = useState(null)
@@ -849,6 +942,58 @@ function calcularRiesgoFinalConEscolta() {
 
     return cumpleNivel && tieneRecursos && tieneItems
   }
+  function calcularCostoEdificio(edificio) {
+  const nivelActual = reino.edificios[edificio] || 1
+  const costoBase = costosEdificios[edificio]
+  const multiplicador = nivelActual
+
+  const costoFinal = {}
+
+  Object.entries(costoBase).forEach(([recurso, cantidad]) => {
+    costoFinal[recurso] = Math.round(cantidad * multiplicador)
+  })
+
+  return costoFinal
+}
+
+function puedeMejorarEdificio(edificio) {
+  const costo = calcularCostoEdificio(edificio)
+
+  return Object.entries(costo).every(
+    ([recurso, cantidad]) => reino.recursos[recurso] >= cantidad
+  )
+}
+
+function mejorarEdificio(edificio) {
+  const costo = calcularCostoEdificio(edificio)
+
+  if (!puedeMejorarEdificio(edificio)) {
+    setMensaje(`No tenés recursos suficientes para mejorar ${nombresEdificios[edificio]}.`)
+    return
+  }
+
+  setReino((reinoActual) => {
+    const nuevosRecursos = { ...reinoActual.recursos }
+    const nuevoNivel = (reinoActual.edificios[edificio] || 1) + 1
+
+    Object.entries(costo).forEach(([recurso, cantidad]) => {
+      nuevosRecursos[recurso] -= cantidad
+    })
+
+    return {
+      ...reinoActual,
+      ayuntamiento:
+        edificio === 'ayuntamiento' ? nuevoNivel : reinoActual.ayuntamiento,
+      recursos: nuevosRecursos,
+      edificios: {
+        ...reinoActual.edificios,
+        [edificio]: nuevoNivel,
+      },
+    }
+  })
+
+  setMensaje(`${nombresEdificios[edificio]} mejorado correctamente.`)
+}
 
   function comprarMejora(idMejora) {
     const mejora = mejorasDisponibles[idMejora]
@@ -909,7 +1054,7 @@ function calcularRiesgoFinalConEscolta() {
 
       <section className="panel">
         <h2>Aldea</h2>
-        <p>Ayuntamiento nivel {reino.ayuntamiento}</p>
+        <p>Ayuntamiento nivel {reino.edificios.ayuntamiento}</p>
       </section>
 
       <section className="grid">
@@ -961,6 +1106,16 @@ function calcularRiesgoFinalConEscolta() {
             ))}
           </ul>
         </div>
+        <div className="card">
+  <h3>Edificios</h3>
+  <ul>
+    {Object.entries(reino.edificios).map(([edificio, nivel]) => (
+      <li key={edificio}>
+        {nombresEdificios[edificio]}: nivel {nivel}
+      </li>
+    ))}
+  </ul>
+</div>
       </section>
 
       <section className="actions">
@@ -973,6 +1128,7 @@ function calcularRiesgoFinalConEscolta() {
             setMostrarAtaques(!mostrarAtaques)
             setMostrarCampos(false)
             setMostrarMejoras(false)
+            setMostrarConstruccion(false)
           }}
         >
           Buscar aldea enemiga
@@ -983,6 +1139,7 @@ function calcularRiesgoFinalConEscolta() {
             setMostrarCampos(!mostrarCampos)
             setMostrarAtaques(false)
             setMostrarMejoras(false)
+            setMostrarConstruccion(false)
           }}
         >
           Ver Campos de Ceniza ({camposCeniza.length})
@@ -993,16 +1150,56 @@ function calcularRiesgoFinalConEscolta() {
             setMostrarMejoras(!mostrarMejoras)
             setMostrarAtaques(false)
             setMostrarCampos(false)
+            setMostrarConstruccion(false)
           }}
         >
           Herrería y Tecnología
         </button>
+
+        <button
+  onClick={() => {
+    setMostrarConstruccion(!mostrarConstruccion)
+    setMostrarEntrenamiento(false)
+    setMostrarAtaques(false)
+    setMostrarCampos(false)
+    setMostrarMejoras(false)
+  }}
+>
+  Construcción
+</button>
         <button onClick={reiniciarPartida}>
   Reiniciar partida
 </button>
       </section>
 
       {mensaje && <p className="message global-message">{mensaje}</p>}
+
+      {mostrarConstruccion && (
+  <section className="panel training-panel">
+    <h2>Construcción</h2>
+    <p>Mejorá los edificios de tu reino gastando recursos.</p>
+
+    <div className="enemy-grid">
+      {Object.entries(reino.edificios).map(([edificio, nivel]) => (
+        <div className="enemy-card" key={edificio}>
+          <h3>{nombresEdificios[edificio]}</h3>
+          <p>Nivel actual: {nivel}</p>
+          <p>Próximo nivel: {nivel + 1}</p>
+
+          <h4>Costo próximo nivel</h4>
+<p>{mostrarCostoRecursos(calcularCostoEdificio(edificio))}</p>
+
+<button
+  disabled={!puedeMejorarEdificio(edificio)}
+  onClick={() => mejorarEdificio(edificio)}
+>
+  {puedeMejorarEdificio(edificio) ? 'Mejorar' : 'Recursos insuficientes'}
+</button>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
 
       {mostrarEntrenamiento && (
         <section className="panel training-panel">
