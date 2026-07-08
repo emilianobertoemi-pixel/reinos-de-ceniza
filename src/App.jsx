@@ -489,6 +489,14 @@ function calcularCargaAtaqueSeleccionado() {
     tropasAtaque.jinetes * 25
   )
 }
+function calcularDefensaEdificios() {
+  return (
+    reino.edificios.muralla * 120 +
+    reino.edificios.torreDefensiva * 90 +
+    reino.edificios.ayuntamiento * 30 +
+    reino.mejoras.muralla * 40
+  )
+}
 
 function calcularDefensaAldeaDespuesAtaque() {
   const espadachinesEnAldea =
@@ -504,9 +512,9 @@ function calcularDefensaAldeaDespuesAtaque() {
     espadachinesEnAldea * 8 +
     arquerosEnAldea * 11 +
     jinetesEnAldea * 18 +
-    reino.mejoras.muralla * 120 +
-    reino.heroes.rey.nivel * 30 +
-    reino.heroes.reina.nivel * 20
+    calcularDefensaEdificios() +
+reino.heroes.rey.nivel * 30 +
+reino.heroes.reina.nivel * 20
   )
 }
   function atacarAldea(aldea) {
@@ -781,9 +789,9 @@ function calcularDefensaAldeaConEscolta() {
     espadachinesEnAldea * 8 +
     arquerosEnAldea * 11 +
     jinetesEnAldea * 18 +
-    reino.mejoras.muralla * 120 +
-    reino.heroes.rey.nivel * 30 +
-    reino.heroes.reina.nivel * 20
+    calcularDefensaEdificios() +
+reino.heroes.rey.nivel * 30 +
+reino.heroes.reina.nivel * 20
   )
 }
 
@@ -1053,9 +1061,10 @@ function mejorarEdificio(edificio) {
       </section>
 
       <section className="panel">
-        <h2>Aldea</h2>
-        <p>Ayuntamiento nivel {reino.edificios.ayuntamiento}</p>
-      </section>
+  <h2>Aldea</h2>
+  <p>Ayuntamiento nivel {reino.edificios.ayuntamiento}</p>
+  <p>Defensa actual del reino: {calcularDefensaAldeaConEscolta()}</p>
+</section>
 
       <section className="grid">
         <div className="card">
