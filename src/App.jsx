@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 const reinoInicial = {
@@ -208,9 +208,35 @@ const escoltaInicial = {
   arqueros: 0,
   jinetes: 0,
 }
+const CLAVE_GUARDADO = 'reinosDeCenizaPartida'
+
+function cargarPartidaGuardada() {
+  const partidaGuardada = localStorage.getItem(CLAVE_GUARDADO)
+
+  if (!partidaGuardada) {
+    return {
+      reino: reinoInicial,
+      camposCeniza: [],
+    }
+  }
+
+  try {
+    const partida = JSON.parse(partidaGuardada)
+
+    return {
+      reino: partida.reino || reinoInicial,
+      camposCeniza: partida.camposCeniza || [],
+    }
+  } catch {
+    return {
+      reino: reinoInicial,
+      camposCeniza: [],
+    }
+  }
+}
 
 function App() {
-  const [reino, setReino] = useState(reinoInicial)
+  const [reino, setReino] = useState(() => cargarPartidaGuardada().reino)
   const [mostrarEntrenamiento, setMostrarEntrenamiento] = useState(false)
   const [mostrarAtaques, setMostrarAtaques] = useState(false)
   const [mostrarCampos, setMostrarCampos] = useState(false)
@@ -218,12 +244,39 @@ function App() {
   const [mensaje, setMensaje] = useState('')
   const [resultadoBatalla, setResultadoBatalla] = useState(null)
   const [resultadoRecoleccion, setResultadoRecoleccion] = useState(null)
-  const [camposCeniza, setCamposCeniza] = useState([])
+  const [camposCeniza, setCamposCeniza] = useState(
+  () => cargarPartidaGuardada().camposCeniza
+)
   const [campoSeleccionado, setCampoSeleccionado] = useState(null)
   const [escoltaSeleccionada, setEscoltaSeleccionada] = useState(escoltaInicial)
   const [aldeaSeleccionada, setAldeaSeleccionada] = useState(null)
 const [tropasAtaque, setTropasAtaque] = useState(ataqueInicial)
 const [reporteEspia, setReporteEspia] = useState(null)
+
+useEffect(() => {
+  const partida = {
+    reino,
+    camposCeniza,
+  }
+
+  localStorage.setItem(CLAVE_GUARDADO, JSON.stringify(partida))
+}, [reino, camposCeniza])
+
+function reiniciarPartida() {
+  const confirmar = window.confirm('¿Seguro que querés reiniciar la partida?')
+
+  if (!confirmar) return
+
+  localStorage.removeItem(CLAVE_GUARDADO)
+  setReino(reinoInicial)
+  setCamposCeniza([])
+  setCampoSeleccionado(null)
+  setAldeaSeleccionada(null)
+  setResultadoBatalla(null)
+  setResultadoRecoleccion(null)
+  setReporteEspia(null)
+  setMensaje('Partida reiniciada.')
+}
 
   function puedePagar(costo) {
     return Object.entries(costo).every(([recurso, cantidad]) => {
@@ -944,6 +997,9 @@ function calcularRiesgoFinalConEscolta() {
         >
           Herrería y Tecnología
         </button>
+        <button onClick={reiniciarPartida}>
+  Reiniciar partida
+</button>
       </section>
 
       {mensaje && <p className="message global-message">{mensaje}</p>}
